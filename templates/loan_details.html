@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Loan Details #{{ loan.LoanID }}</h2>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-outline">Back to Dashboard</a>
+        </div>
+        
+        <div class="dashboard-grid" style="grid-template-columns: 1fr 1fr; margin-bottom: 2rem;">
+            <div class="card">
+                <h3>Loan Information</h3>
+                <div style="padding: 1rem 0;">
+                    <p><strong>Amount:</strong> ₹{{ "%.2f"|format(loan.Amount) }}</p>
+                    <p><strong>Interest Rate:</strong> {{ "%.2f"|format(loan.InterestRate) }}%</p>
+                    <p><strong>Duration:</strong> {{ loan.Duration }} months</p>
+                    <p><strong>EMI Amount:</strong> ₹{{ "%.2f"|format(loan.EMIAmount) if loan.EMIAmount else 'N/A' }}</p>
+                    <p><strong>Outstanding Balance:</strong> ₹{{ "%.2f"|format(loan.OutstandingBalance) }}</p>
+                    <p><strong>Purpose:</strong> {{ loan.Purpose }}</p>
+                    <p><strong>Status:</strong> 
+                        <span class="status status-{{ loan.Status }}">
+                            {{ loan.Status|title }}
+                        </span>
+                    </p>
+                </div>
+            </div>
+            
+            <div class="card">
+                <h3>Important Dates</h3>
+                <div style="padding: 1rem 0;">
+                    <p><strong>Applied Date:</strong> {{ loan.AppliedDate.strftime('%Y-%m-%d') }}</p>
+                    {% if loan.ApprovedDate %}
+                    <p><strong>Approved Date:</strong> {{ loan.ApprovedDate.strftime('%Y-%m-%d') }}</p>
+                    {% endif %}
+                    {% if loan.DisbursedDate %}
+                    <p><strong>Disbursed Date:</strong> {{ loan.DisbursedDate.strftime('%Y-%m-%d') }}</p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        {% if repayments %}
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">Repayment Schedule</h3>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Due Date</th>
+                            <th>Principal</th>
+                            <th>Interest</th>
+                            <th>Total EMI</th>
+                            <th>Status</th>
+                            <th>Paid Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for repayment in repayments %}
+                        <tr>
+                            <td>{{ repayment.DueDate.strftime('%Y-%m-%d') }}</td>
+                            <td>₹{{ "%.2f"|format(repayment.PrincipalAmount or 0) }}</td>
+                            <td>₹{{ "%.2f"|format(repayment.InterestAmount or 0) }}</td>
+                            <td>₹{{ "%.2f"|format(repayment.Amount) }}</td>
+                            <td>
+                                <span class="status status-{{ repayment.Status }}">
+                                    {{ repayment.Status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if repayment.PaidDate %}
+                                    {{ repayment.PaidDate.strftime('%Y-%m-%d') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

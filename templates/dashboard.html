@@ -1,0 +1,499 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="dashboard">
+    
+    <h1 class="dashboard-title">BORROWER FINANCIAL DASHBOARD</h1>
+    
+    <div class="dashboard-grid">
+        <!-- Financial Health Score -->
+        <div class="card stat-card health-score">
+            <div class="score-ring">
+                <div class="score-value">{{ health_score }}</div>
+            </div>
+            <div class="stat-label">Financial Health Score</div>
+            {% if factors %}
+            <div class="health-factors">
+                {% for factor, status in factors.items() %}
+                <div class="factor-item">
+                    <span class="factor-name">{{ factor|replace('_', ' ')|title }}:</span>
+                    <span class="factor-status {{ status|lower|replace(' ', '-') }}">{{ status }}</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% endif %}
+        </div>
+        
+        <!-- Wallet Balance -->
+        <div class="card stat-card">
+            <div class="stat-value">₹{{ "%.2f"|format(wallet.Balance) if wallet else "0.00" }}</div>
+            <div class="stat-label">Available Balance</div>
+            <button class="btn btn-sm" onclick="addWalletFunds()" style="margin-top: 0.5rem;">Add Funds</button>
+        </div>
+        
+        <!-- Active Loans -->
+        <div class="card stat-card">
+            <div class="stat-value">{{ loans|selectattr("Status", "equalto", "active")|list|length }}</div>
+            <div class="stat-label">Active Loans</div>
+            <div class="stat-subtext">
+                {{ loans|selectattr("Status", "equalto", "pending")|list|length }} PENDING
+            </div>
+        </div>
+        
+        <!-- Next Payment -->
+        <div class="card stat-card">
+            {% if upcoming_repayments and upcoming_repayments|length > 0 %}
+                {% set next_repayment = upcoming_repayments[0] %}
+                <div class="stat-value">₹{{ "%.2f"|format(next_repayment.TotalAmountDue or next_repayment.Amount) }}</div>
+                <div class="stat-label">Next Payment Due</div>
+                <div class="stat-subtext">
+                    {{ next_repayment.DueDate.strftime('%d %b') }}
+                    {% if next_repayment.DaysOverdue > 0 %}
+                    <span class="overdue-badge">{{ next_repayment.DaysOverdue }} days overdue</span>
+                    {% endif %}
+                </div>
+            {% else %}
+                <div class="stat-value">₹0.00</div>
+                <div class="stat-label">No Payments Due</div>
+            {% endif %}
+        </div>
+        
+        <!-- Total Overdue -->
+        {% if total_overdue_amount > 0 %}
+        <div class="card stat-card overdue-alert">
+            <div class="stat-value text-danger">₹{{ "%.2f"|format(total_overdue_amount) }}</div>
+            <div class="stat-label">Total Overdue</div>
+            <div class="stat-subtext">
+                Across all active loans
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="tabs">
+        <div class="tab active" data-tab="loans">My Loans</div>
+        <div class="tab" data-tab="repayments">Repayment Schedule</div>
+        <div class="tab" data-tab="wallet">Wallet & Transactions</div>
+        <div class="tab" data-tab="agreements">Loan Agreements</div>
+    </div>
+
+    <!-- Loans Tab -->
+    <div class="tab-content active" id="loans-tab">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">LOAN APPLICATIONS</h3>
+                <a href="{{ url_for('apply_loan') }}" class="btn btn-primary">Apply for New Loan</a>
+            </div>
+            <div class="table-container">
+                <table class="loans-table">
+                    <thead>
+                        <tr>
+                            <th>Loan ID</th>
+                            <th>Amount</th>
+                            <th>Purpose</th>
+                            <th>Interest Rate</th>
+                            <th>Duration</th>
+                            <th>EMI Amount</th>
+                            <th>Status</th>
+                            <th>Agreement</th>
+                            <th>Disbursement</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in loans %}
+                        <tr class="loan-row loan-{{ loan.Status|lower }}">
+                            <td>
+                                <strong>#{{ loan.LoanID }}</strong>
+                                <br>
+                                <small>{{ loan.AppliedDate.strftime('%d/%m/%y') }}</small>
+                            </td>
+                            <td>
+                                <strong>₹{{ "%.2f"|format(loan.Amount) }}</strong>
+                            </td>
+                            <td>
+                                <div class="purpose-badge">{{ loan.Purpose.replace('_', ' ').title() }}</div>
+                            </td>
+                            <td>
+                                <span class="interest-rate">{{ "%.1f"|format(loan.InterestRate) }}%</span>
+                            </td>
+                            <td>{{ loan.Duration }} months</td>
+                            <td>
+                                {% if loan.EMIAmount and loan.Status == 'approved' %}
+                                    <strong>₹{{ "%.2f"|format(loan.EMIAmount) }}</strong>
+                                    <br>
+                                    <small class="text-muted">/month</small>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="status status-{{ loan.Status }}">
+                                    {{ loan.Status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if loan.AgreementPDF %}
+                                    {% if loan.AgreementSigned %}
+                                        <span class="status status-completed">Signed</span>
+                                        <br>
+                                    {% else %}
+                                        <span class="status status-warning">Sign Required</span>
+                                    {% endif %}
+                                {% else %}
+                                    <span class="status status-pending">Generating</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if loan.DisbursementStatus %}
+                                    <span class="status status-{{ loan.DisbursementStatus }}">
+                                        {% if loan.DisbursementStatus == 'processed' %}
+                                            Disbursed
+                                        {% elif loan.DisbursementStatus == 'signed' %}
+                                            Ready
+                                        {% else %}
+                                            {{ loan.DisbursementStatus|title }}
+                                        {% endif %}
+                                    </span>
+                                {% else %}
+                                    <span class="text-muted">-</span>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <div class="action-buttons">
+                                    {% if loan.Status == 'approved' and loan.AgreementPDF %}
+                                        {% if not loan.AgreementSigned %}
+                                            <button class="btn btn-success btn-sm" 
+                                                    onclick="signAgreement({{ loan.LoanID }})"
+                                                    title="Sign Agreement">
+                                                Sign Agreement
+                                            </button>
+                                        {% endif %}
+                                        <a href="{{ url_for('view_agreement', loan_id=loan.LoanID) }}" 
+                                           class="btn btn-sm btn-outline" 
+                                           title="View Agreement">
+                                            View
+                                        </a>
+                                    {% endif %}
+                                    {% if loan.Status == 'active' %}
+                                        <button class="btn btn-info btn-sm"
+                                                onclick="showLoanDetails({{ loan.LoanID }})"
+                                                title="Loan Details">
+                                            Details
+                                        </button>
+                                    {% endif %}
+                                </div>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="10" class="no-data">
+                                <div class="no-data-content">
+                                    <h3>No loan applications yet</h3>
+                                    <p>Start by applying for your first loan</p>
+                                    <a href="{{ url_for('apply_loan') }}" class="btn btn-primary">Apply for Loan</a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Agreement Signing Instructions -->
+            {% if loans|selectattr("Status", "equalto", "approved")|selectattr("AgreementSigned", "equalto", false)|list|length > 0 %}
+            <div class="card-footer warning-message">
+                <div class="warning-content">
+                    <strong>Action Required:</strong> Please sign your loan agreement to receive disbursement. 
+                    Loans will only be disbursed after agreement signing.
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Repayments Tab -->
+    <div class="tab-content" id="repayments-tab">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">REPAYMENT SCHEDULE</h3>
+                <div class="loan-status-info">
+                    <small>Payments enabled only for disbursed loans</small>
+                </div>
+            </div>
+            <div class="table-container">
+                <table class="repayments-table">
+                    <thead>
+                        <tr>
+                            <th>Due Date</th>
+                            <th>Loan ID</th>
+                            <th>Loan Status</th>
+                            <th>Principal</th>
+                            <th>Interest</th>
+                            <th>Total EMI</th>
+                            <th>Late Penalty</th>
+                            <th>Total Due</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for repayment in upcoming_repayments %}
+                        {% set loan = loans|selectattr("LoanID", "equalto", repayment.LoanID)|first %}
+                        <tr class="{% if repayment.DaysOverdue > 0 %}repayment-overdue{% endif %}">
+                            <td>
+                                {{ repayment.DueDate.strftime('%d %b %Y') }}
+                                {% if repayment.DaysOverdue > 0 %}
+                                <br><small class="text-danger">({{ repayment.DaysOverdue }} days overdue)</small>
+                                {% endif %}
+                            </td>
+                            <td>#{{ repayment.LoanID }}</td>
+                            <td>
+                                {% if loan %}
+                                    <span class="status status-{{ loan.Status }}">
+                                        {{ loan.Status|title }}
+                                    </span>
+                                {% else %}
+                                    <span class="status status-pending">Unknown</span>
+                                {% endif %}
+                            </td>
+                            <td>₹{{ "%.2f"|format(repayment.PrincipalAmount or 0) }}</td>
+                            <td>₹{{ "%.2f"|format(repayment.InterestAmount or 0) }}</td>
+                            <td>₹{{ "%.2f"|format(repayment.Amount) }}</td>
+                            <td>
+                                {% if repayment.LatePenalty and repayment.LatePenalty > 0 %}
+                                <span class="text-danger">₹{{ "%.2f"|format(repayment.LatePenalty) }}</span>
+                                {% else %}
+                                ₹0.00
+                                {% endif %}
+                            </td>
+                            <td>
+                                <strong>₹{{ "%.2f"|format(repayment.TotalAmountDue or repayment.Amount) }}</strong>
+                            </td>
+                            <td>
+                                <span class="status status-{{ repayment.Status }}">
+                                    {{ repayment.Status|title }}
+                                    {% if repayment.DaysOverdue > 0 %}
+                                    <br><small class="text-danger">Overdue</small>
+                                    {% endif %}
+                                </span>
+                            </td>
+                            <td>
+                                {% if loan and loan.Status == 'active' and loan.DisbursementStatus == 'processed' and repayment.Status == 'pending' %}
+                                <button class="btn btn-primary repay-emi" 
+                                        data-repayment-id="{{ repayment.RepaymentID }}"
+                                        data-amount="{{ repayment.TotalAmountDue or repayment.Amount }}"
+                                        data-emi-amount="{{ repayment.Amount }}"
+                                        data-penalty="{{ repayment.LatePenalty or 0 }}">
+                                    Pay ₹{{ "%.2f"|format(repayment.TotalAmountDue or repayment.Amount) }}
+                                </button>
+                                {% elif loan and loan.Status == 'approved' and loan.DisbursementStatus != 'processed' %}
+                                <span class="status status-pending">Awaiting Disbursement</span>
+                                {% elif repayment.Status == 'paid' %}
+                                <span class="status status-completed">Paid</span>
+                                {% else %}
+                                <span class="status status-pending">Not Available</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="10" class="no-data">
+                                {% if loans|selectattr("Status", "equalto", "active")|list|length > 0 %}
+                                    No upcoming repayments for active loans
+                                {% else %}
+                                    No active loans with repayment schedule
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Wallet Tab -->
+    <div class="tab-content" id="wallet-tab">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">WALLET TRANSACTIONS</h3>
+                <button class="btn btn-primary" onclick="addWalletFunds()">Add Funds</button>
+            </div>
+            <div class="table-container">
+                <table class="transactions-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Description</th>
+                            <th>Amount</th>
+                            <th>Type</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% if transactions %}
+                            {% for transaction in transactions %}
+                            <tr>
+                                <td>{{ transaction.TransactionDate.strftime('%d %b %Y') }}</td>
+                                <td>{{ transaction.Description }}</td>
+                                <td>
+                                    {% if transaction.Type == 'credit' %}
+                                    <span class="text-success">+₹{{ "%.2f"|format(transaction.Amount) }}</span>
+                                    {% else %}
+                                    <span class="text-danger">-₹{{ "%.2f"|format(transaction.Amount) }}</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ transaction.Type|title }}</td>
+                                <td>
+                                    <span class="status status-{{ transaction.Status }}">
+                                        {{ transaction.Status|title }}
+                                    </span>
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="no-data">No transactions found</td>
+                            </tr>
+                            {% endfor %}
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Agreements Tab -->
+    <div class="tab-content" id="agreements-tab">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">LOAN AGREEMENTS</h3>
+            </div>
+            <div class="table-container">
+                <table class="agreements-table">
+                    <thead>
+                        <tr>
+                            <th>Loan ID</th>
+                            <th>Amount</th>
+                            <th>Agreement Status</th>
+                            <th>Signed Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in loans %}
+                            {% if loan.AgreementPDF %}
+                            <tr>
+                                <td>#{{ loan.LoanID }}</td>
+                                <td>₹{{ "%.2f"|format(loan.Amount) }}</td>
+                                <td>
+                                    {% if loan.AgreementSigned %}
+                                        <span class="status status-completed">Signed</span>
+                                    {% else %}
+                                        <span class="status status-pending">Pending Signature</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if loan.SignedDate %}
+                                        {{ loan.SignedDate.strftime('%d %b %Y') }}
+                                    {% else %}
+                                        -
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <a href="{{ url_for('view_agreement', loan_id=loan.LoanID) }}" 
+                                       class="btn btn-sm btn-primary">View</a>
+                                    <a href="{{ url_for('download_agreement', loan_id=loan.LoanID) }}" 
+                                       class="btn btn-sm btn-outline">Download</a>
+                                    {% if not loan.AgreementSigned %}
+                                    <button class="btn btn-sm btn-success" 
+                                            onclick="signAgreement({{ loan.LoanID }})">Sign</button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endif %}
+                        {% else %}
+                        <tr>
+                            <td colspan="5" class="no-data">No loan agreements available</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+
+<script>
+function showLoanDetails(loanId) {
+    alert('Loan details for #' + loanId + ' would be displayed here with repayment history and schedule.');
+}
+
+function addWalletFunds() {
+    const amount = prompt('Enter amount to add to wallet:');
+    if (amount && !isNaN(amount) && parseFloat(amount) > 0) {
+        fetch('/api/add-wallet-funds', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ amount: parseFloat(amount) })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error adding funds: ' + error);
+        });
+    }
+}
+
+function signAgreement(loanId) {
+    if (confirm('Are you sure you want to sign this loan agreement?')) {
+        fetch('/api/sign-agreement/' + loanId, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert(data.message);
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        })
+        .catch(error => {
+            alert('Error signing agreement: ' + error);
+        });
+    }
+}
+
+// Tab functionality
+document.addEventListener('DOMContentLoaded', function() {
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+        tab.addEventListener('click', function() {
+            const tabName = this.getAttribute('data-tab');
+            
+            // Remove active class from all tabs and contents
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            // Add active class to clicked tab and corresponding content
+            this.classList.add('active');
+            document.getElementById(tabName + '-tab').classList.add('active');
+        });
+    });
+});
+</script>
+{% endblock %}

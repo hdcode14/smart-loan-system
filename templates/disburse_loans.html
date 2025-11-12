@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <h2>Loan Disbursement</h2>
+    
+    <div class="card">
+        <div class="card-header">
+            <h5>Approved Loans Pending Disbursement</h5>
+        </div>
+        <div class="card-body">
+            {% if approved_loans %}
+            <div class="table-responsive">
+                <table class="table table-striped">
+                    <thead>
+                        <tr>
+                            <th>Loan ID</th>
+                            <th>Borrower</th>
+                            <th>Amount</th>
+                            <th>Purpose</th>
+                            <th>Interest Rate</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in approved_loans %}
+                        <tr>
+                            <td>#{{ loan.LoanID }}</td>
+                            <td>{{ loan.Name }}</td>
+                            <td>₹{{ "%.2f"|format(loan.Amount) }}</td>
+                            <td>{{ loan.Purpose }}</td>
+                            <td>{{ loan.InterestRate }}%</td>
+                            <td>
+                                <button class="btn btn-success btn-sm disburse-btn" data-loan-id="{{ loan.LoanID }}">
+                                    Disburse to Wallet
+                                </button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <p class="text-muted">No loans pending disbursement.</p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<script>
+document.querySelectorAll('.disburse-btn').forEach(button => {
+    button.addEventListener('click', function() {
+        const loanId = this.getAttribute('data-loan-id');
+        
+        if (confirm('Are you sure you want to disburse this loan to the borrower\'s wallet?')) {
+            fetch(`/api/disburse-loan/${loanId}`, {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({ method: 'wallet' })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Loan disbursed successfully!');
+                    location.reload();
+                } else {
+                    alert('Error: ' + data.error);
+                }
+            });
+        }
+    });
+});
+</script>
+{% endblock %}

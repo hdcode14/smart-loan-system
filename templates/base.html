@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Smart Loan Management System{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<header>
+    <div class="container">
+        <nav class="navbar">
+            <div class="logo">SMARTLOAN</div>
+            <div class="nav-links">
+                <a href="{{ url_for('index') }}" class="{{ 'active' if request.endpoint == 'index' }}">Home</a>
+                {% if session.user_id %}
+                    <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">Dashboard</a>
+                    {% if session.user_type == 'borrower' %}
+                        <a href="{{ url_for('apply_loan') }}" class="{{ 'active' if request.endpoint == 'apply_loan' }}">Apply Loan</a>
+                    {% endif %}
+                    {% if session.user_type == 'admin' %}
+                        <a href="{{ url_for('admin_dashboard') }}" class="{{ 'active' if request.endpoint == 'admin_dashboard' }}">Administration</a>
+                        <a href="{{ url_for('disburse_loans') }}" class="{{ 'active' if request.endpoint == 'disburse_loans' }}">Disburse Loans</a>
+                    {% endif %}
+                {% endif %}
+            </div>
+            <div class="user-actions">
+                {% if session.user_id %}
+                    <span style="color: var(--secondary); font-weight: 500; font-size: 0.875rem;">{{ session.user_name }}</span>
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline">Logout</a>
+                {% else %}
+                    <a href="{{ url_for('login') }}" class="btn btn-outline">Login</a>
+                    <a href="{{ url_for('register') }}" class="btn btn-primary">Get Started</a>
+                {% endif %}
+            </div>
+        </nav>
+    </div>
+</header>
+
+    <main>
+        <div class="container">
+            {% with messages = get_flashed_messages(with_categories=true) %}
+                {% if messages %}
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category if category != 'error' else 'error' }}">
+                            {{ message }}
+                        </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </main>
+
+    <footer>
+        <div class="container">
+            <div class="footer-content">
+                <div class="footer-section">
+                    <h3>SmartLoan</h3>
+                    <p>Automating the complete loan lifecycle with transparency, efficiency, and user empowerment.</p>
+                </div>
+                <div class="footer-section">
+                    <h3>Quick Links</h3>
+                    <a href="{{ url_for('index') }}">Home</a>
+                    <a href="#about">About Us</a>
+                    <a href="#services">Services</a>
+                    <a href="#contact">Contact</a>
+                </div>
+                <div class="footer-section">
+                    <h3>Services</h3>
+                    <a href="{{ url_for('register_borrower') }}">Borrower Portal</a>
+                    <a href="{{ url_for('register_admin') }}">Admin Portal</a>
+                    <a href="#financial-health">Financial Health</a>
+                </div>
+                <div class="footer-section">
+                    <h3>Contact Us</h3>
+                    <p>Email: support@smartloan.com</p>
+                    <p>Phone: +1 (555) 123-4567</p>
+                </div>
+            </div>
+            <div class="copyright">
+                &copy; 2023 SmartLoan Management System. All rights reserved.
+            </div>
+        </div>
+    </footer>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+</body>
+</html>

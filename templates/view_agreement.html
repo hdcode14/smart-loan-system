@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container">
+    <div class="card">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <h4>LOAN AGREEMENT - {{ loan.LoanID }}</h4>
+            <div>
+                <a href="{{ url_for('download_agreement', loan_id=loan.LoanID) }}" class="btn btn-primary">
+                    📄 Download PDF
+                </a>
+                {% if session.user_type == 'borrower' and not loan.AgreementSigned %}
+                <button class="btn btn-success" id="signAgreementBtn">
+                    ✍️ Sign Agreement
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card-body">
+            {% if loan.AgreementPDF %}
+            <div class="embed-responsive embed-responsive-16by9">
+                <embed src="{{ url_for('static', filename='agreements/' + loan.AgreementPDF) }}" 
+                       type="application/pdf" 
+                       width="100%" 
+                       height="600px">
+            </div>
+            {% else %}
+            <div class="alert alert-warning">
+                Agreement PDF not generated yet.
+            </div>
+            {% endif %}
+            
+            {% if loan.AgreementSigned %}
+            <div class="alert alert-success mt-3">
+                ✅ Agreement signed on {{ loan.SignedDate.strftime('%d-%m-%Y') if loan.SignedDate else 'Unknown date' }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+{% if session.user_type == 'borrower' and not loan.AgreementSigned %}
+<script>
+document.getElementById('signAgreementBtn').addEventListener('click', function() {
+    if (confirm('Are you sure you want to sign this loan agreement? This action cannot be undone.')) {
+        fetch('/api/sign-agreement/{{ loan.LoanID }}', {method: 'POST'})
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('Agreement signed successfully!');
+                location.reload();
+            } else {
+                alert('Error: ' + data.error);
+            }
+        });
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

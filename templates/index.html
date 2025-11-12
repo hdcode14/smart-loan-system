@@ -1,0 +1,280 @@
+{% extends "base.html" %}
+
+{% block content %}
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+    
+    * {
+        font-family: 'Inter', sans-serif;
+    }
+    
+    .hero {
+        background: linear-gradient(135deg, rgba(13, 71, 161, 0.4) 0%, rgba(21, 101, 192, 0.3) 100%), 
+                    url("{{ url_for('static', filename='image/BG.jpg') }}");
+        background-size: cover;
+        background-position: center;
+        color: white;
+        padding: 6rem 2rem;
+        text-align: center;
+        min-height: 70vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .hero-content {
+        max-width: 900px;
+    }
+
+    .hero h1 {
+        font-size: 4rem;
+        margin-bottom: 1.5rem;
+        font-weight: 700;
+        line-height: 1.1;
+        letter-spacing: -0.02em;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+    }
+
+    .hero p {
+        font-size: 1.4rem;
+        margin-bottom: 2.5rem;
+        opacity: 0.95;
+        font-weight: 400;
+        line-height: 1.6;
+        letter-spacing: -0.01em;
+        text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+    }
+
+    .btn-primary {
+        background: #FF6D00;
+        border: none;
+        padding: 16px 40px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        border-radius: 8px;
+    }
+
+    .btn-primary:hover {
+        background: #FF5722;
+        transform: translateY(-2px);
+    }
+
+    .features {
+        padding: 5rem 2rem;
+        background: white;
+    }
+
+    .features h2 {
+        text-align: center;
+        color: #2c3e50;
+        margin-bottom: 4rem;
+        font-weight: 600;
+        font-size: 3rem;
+        letter-spacing: -0.02em;
+    }
+
+    .features-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+        gap: 2.5rem;
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .feature-card {
+        background: #f8f9fa;
+        padding: 3rem 2rem;
+        border-radius: 12px;
+        text-align: center;
+        border-left: 4px solid #2196F3;
+        transition: transform 0.2s ease;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    }
+
+    .feature-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+    }
+
+    .feature-card h3 {
+        color: #2c3e50;
+        margin: 1.5rem 0;
+        font-size: 1.5rem;
+        font-weight: 600;
+        letter-spacing: -0.01em;
+    }
+
+    .feature-card p {
+        color: #666;
+        line-height: 1.6;
+        font-size: 1.1rem;
+        font-weight: 400;
+    }
+
+    .stats {
+        padding: 4rem 2rem;
+        text-align: center;
+        background: #f8f9fa;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 3rem;
+        max-width: 900px;
+        margin: 0 auto;
+    }
+
+    .stat-number {
+        font-size: 3.5rem;
+        color: #2196F3;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        letter-spacing: -0.02em;
+    }
+
+    .stat-label {
+        color: #666;
+        font-size: 1.2rem;
+        font-weight: 500;
+    }
+
+    .cta {
+        background: linear-gradient(135deg, #1a237e 0%, #303f9f 100%);
+        color: white;
+        padding: 5rem 2rem;
+        text-align: center;
+    }
+
+    .cta h3 {
+        margin-bottom: 1.5rem;
+        font-weight: 600;
+        font-size: 2.5rem;
+        letter-spacing: -0.02em;
+    }
+
+    .cta p {
+        margin-bottom: 2.5rem;
+        opacity: 0.9;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        font-size: 1.3rem;
+        font-weight: 400;
+        line-height: 1.6;
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 2px solid white;
+        color: white;
+        padding: 16px 40px;
+        font-size: 1.2rem;
+        font-weight: 600;
+        border-radius: 8px;
+        margin: 0 1rem;
+    }
+
+    .btn-outline:hover {
+        background: white;
+        color: #1a237e;
+        transform: translateY(-2px);
+    }
+
+    @media (max-width: 768px) {
+        .hero h1 {
+            font-size: 3rem;
+        }
+        
+        .hero p {
+            font-size: 1.2rem;
+        }
+        
+        .features h2 {
+            font-size: 2.5rem;
+        }
+        
+        .cta h3 {
+            font-size: 2rem;
+        }
+        
+        .btn-outline {
+            margin: 0.5rem;
+            display: block;
+        }
+    }
+</style>
+
+<!-- Hero Section -->
+<section class="hero">
+    <div class="hero-content">
+        <h1>SMART LOAN MANAGEMENT</h1>
+        <p>Advanced digital platform for efficient loan processing and financial management</p>
+        {% if not session.user_id %}
+            <a href="{{ url_for('register') }}" class="btn btn-primary">
+                GET STARTED
+            </a>
+        {% else %}
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">
+                VIEW DASHBOARD
+            </a>
+        {% endif %}
+    </div>
+</section>
+
+<!-- Features Section -->
+<section class="features">
+    <h2>PLATFORM FEATURES</h2>
+    <div class="features-grid">
+        <div class="feature-card">
+            <h3>DIGITAL APPLICATIONS</h3>
+            <p>Streamlined online loan applications with automated validation and fast processing</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>AUTOMATED APPROVAL</h3>
+            <p>Intelligent workflow management with role-based access and comprehensive audit trails</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>SECURE PLATFORM</h3>
+            <p>Enterprise-grade security with encrypted data protection and compliance standards</p>
+        </div>
+        
+        <div class="feature-card">
+            <h3>PAYMENT MANAGEMENT</h3>
+            <p>Complete EMI tracking with automated schedules and real-time payment monitoring</p>
+        </div>
+    </div>
+</section>
+
+<!-- Stats Section -->
+<section class="stats">
+    <div class="stats-grid">
+        <div>
+            <div class="stat-number">50K+</div>
+            <div class="stat-label">LOANS PROCESSED</div>
+        </div>
+        <div>
+            <div class="stat-number">₹500Cr+</div>
+            <div class="stat-label">PORTFOLIO SIZE</div>
+        </div>
+        <div>
+            <div class="stat-number">98%</div>
+            <div class="stat-label">SATISFACTION RATE</div>
+        </div>
+    </div>
+</section>
+
+<!-- CTA Section -->
+<section class="cta">
+    <h3>READY TO BEGIN?</h3>
+    <p>Join financial institutions and borrowers who trust our platform for secure and efficient loan management</p>
+    {% if not session.user_id %}
+        <a href="{{ url_for('register') }}" class="btn btn-primary">CREATE ACCOUNT</a>
+        <a href="{{ url_for('login') }}" class="btn btn-outline">LOGIN</a>
+    {% else %}
+        <a href="{{ url_for('apply_loan') }}" class="btn btn-primary">APPLY FOR LOAN</a>
+    {% endif %}
+</section>
+{% endblock %}

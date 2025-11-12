@@ -1,0 +1,82 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Borrower Registration</h2>
+        </div>
+        <form method="POST">
+            <div class="form-group">
+                <label for="name">Full Name *</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password *</label>
+                <input type="password" id="password" name="password" required minlength="6">
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" placeholder="+1-555-123-4567">
+            </div>
+            
+            <div class="form-group">
+                <label for="address">Address</label>
+                <textarea id="address" name="address" rows="3" placeholder="Enter your full address"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label for="date_of_birth">Date of Birth</label>
+                <input type="date" id="date_of_birth" name="date_of_birth">
+            </div>
+            
+            <div class="form-group">
+                <label for="pan_number">PAN Number</label>
+                <input type="text" id="pan_number" name="pan_number" placeholder="ABCDE1234F" maxlength="10">
+            </div>
+            
+            <div class="form-group">
+                <label for="income">Annual Income (₹) *</label>
+                <input type="number" id="income" name="income" step="0.01" min="0" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="employment_status">Employment Status *</label>
+                <select id="employment_status" name="employment_status" required>
+                    <option value="">Select Status</option>
+                    <option value="Employed">Employed</option>
+                    <option value="Self-employed">Self-Employed</option>
+                    <option value="Student">Student</option>
+                    <option value="Retired">Retired</option>
+                    <option value="Unemployed">Unemployed</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="employment_type">Employment Type</label>
+                <select id="employment_type" name="employment_type">
+                    <option value="">Select Type</option>
+                    <option value="Full-time">Full-time</option>
+                    <option value="Part-time">Part-time</option>
+                    <option value="Contract">Contract</option>
+                    <option value="Freelance">Freelance</option>
+                </select>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Register as Borrower</button>
+        </form>
+        
+        <div style="text-align: center; margin-top: 1rem;">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+            <p>Want to register as Admin? <a href="{{ url_for('register_admin') }}">Admin Registration</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

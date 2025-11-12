@@ -1,0 +1,385 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">APPLY FOR A LOAN</h2>
+        </div>
+        <form id="loanForm" method="POST">
+            <div class="form-group">
+                <label for="loanAmount">Loan Amount (₹)</label>
+                <input type="number" id="loanAmount" name="amount" min="1000" step="100" required>
+                <small id="amount-info" class="form-text text-muted">Enter desired loan amount</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="loanPurpose">Loan Purpose</label>
+                <select id="loanPurpose" name="purpose" required onchange="updatePurposeInfo()">
+                    <option value="">Select Purpose</option>
+                    <option value="DEBT_CONSOLIDATION">Debt Consolidation</option>
+                    <option value="HOME_IMPROVEMENT">Home Improvement</option>
+                    <option value="EDUCATION">Education</option>
+                    <option value="BUSINESS">Business</option>
+                    <option value="MEDICAL">Medical</option>
+                    <option value="VEHICLE_PURCHASE">Vehicle Purchase</option>
+                </select>
+                <small id="purpose-info" class="form-text text-muted">Select a loan purpose to see your personalized limit</small>
+            </div>
+            
+            <div class="form-group">
+                <label for="loanDuration">Loan Duration (months)</label>
+                <select id="loanDuration" name="duration" required>
+                    <option value="">Select Duration</option>
+                    <option value="6">6 months</option>
+                    <option value="12">12 months</option>
+                    <option value="24">24 months</option>
+                    <option value="36">36 months</option>
+                    <option value="48">48 months</option>
+                    <option value="60">60 months</option>
+                </select>
+            </div>
+
+            <!-- Enhanced Eligibility Information Card -->
+            <div class="card eligibility-card">
+                <div class="card-header">
+                    <h3 class="card-title">YOUR LOAN ELIGIBILITY</h3>
+                </div>
+                <div class="eligibility-content">
+                    <!-- Credit Score and Financial Health -->
+                    <div class="eligibility-row">
+                        <div class="eligibility-item">
+                            <span>Credit Score:</span>
+                            <span id="credit-score-display" class="credit-score fair">Loading...</span>
+                        </div>
+                        <div class="eligibility-item">
+                            <span>Financial Health:</span>
+                            <span id="health-score-display" class="health-score">Loading...</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Loan Type Preview -->
+                    <div id="loan-type-preview" class="card loan-type-preview" style="display: none;">
+                        <div class="loan-type-content">
+                            <h4>RECOMMENDED LOAN TYPE</h4>
+                            <div id="loan-type-info"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Interest Rate Preview -->
+                    <div id="interest-preview" class="card interest-preview" style="display: none;">
+                        <div class="interest-content">
+                            <h4>ESTIMATED INTEREST RATE</h4>
+                            <div id="rate-breakdown"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Dynamic Category Limits -->
+                    <div id="category-limits" class="category-limits">
+                        <div class="limits-header">
+                            <h4> CATEGORY BASED LIMITS </h4>
+                            <small>Based on your income and credit profile</small>
+                        </div>
+                        <div class="limits-grid">
+                            {% for purpose, limit in category_limits.items() %}
+                            <div class="limit-item" data-purpose="{{ purpose }}">
+                                <div class="limit-type">{{ purpose.replace('_', ' ').title() }}</div>
+                                <div class="limit-amount">₹{{ "%.2f"|format(limit.max_amount) }}</div>
+                                <div class="limit-multiplier">{{ limit.multiplier }} months income</div>
+                                <div class="limit-desc">{{ limit.description }}</div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 1rem;">
+                Submit Application
+            </button>
+        </form>
+    </div>
+</div>
+
+<style>
+.eligibility-card {
+    background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+    border: 1px solid #e2e8f0;
+    margin: 1.5rem 0;
+}
+
+.eligibility-content {
+    padding: 1.5rem;
+}
+
+.eligibility-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+}
+
+.eligibility-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: white;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+}
+
+.credit-score.excellent { color: #10b981; font-weight: bold; }
+.credit-score.good { color: #3b82f6; font-weight: bold; }
+.credit-score.fair { color: #f59e0b; font-weight: bold; }
+.credit-score.poor { color: #ef4444; font-weight: bold; }
+
+.health-score {
+    color: #8b5cf6;
+    font-weight: bold;
+}
+
+.category-limits {
+    margin-top: 1.5rem;
+}
+
+.card-title{
+    text-align:center;
+    font-size:1.5rem;
+}
+
+.limits-header {
+    text-align: center;
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 2px solid #e2e8f0;
+}
+
+.limits-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+}
+
+.limit-item {
+    background: white;
+    padding: 1rem;
+    border-radius: 8px;
+    border: 1px solid #e2e8f0;
+    transition: all 0.3s ease;
+}
+
+.limit-item:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    border-color: #3b82f6;
+}
+
+.limit-item.active {
+    border-color: #10b981;
+    background: #f0fdf4;
+}
+
+.limit-type {
+    font-weight: 600;
+    color: #1f2937;
+    margin-bottom: 0.5rem;
+}
+
+.limit-amount {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #059669;
+    margin-bottom: 0.25rem;
+}
+
+.limit-multiplier {
+    font-size: 0.875rem;
+    color: #6b7280;
+    margin-bottom: 0.5rem;
+}
+
+.limit-desc {
+    font-size: 0.8rem;
+    color: #4b5563;
+    line-height: 1.4;
+}
+
+.loan-type-preview {
+    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+    border: 1px solid #bbf7d0;
+}
+
+.interest-preview {
+    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
+    border: 1px solid #bae6fd;
+}
+
+.loan-type-content, .interest-content {
+    padding: 1rem;
+}
+
+.rate-breakdown-item, .loan-type-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.rate-breakdown-item:last-child, .loan-type-item:last-child {
+    border-bottom: none;
+    font-weight: 600;
+    color: #059669;
+}
+
+.form-text.text-success {
+    color: #059669 !important;
+    font-weight: 500;
+}
+
+.form-text.text-warning {
+    color: #d97706 !important;
+    font-weight: 500;
+}
+
+.form-text.text-danger {
+    color: #dc2626 !important;
+    font-weight: 500;
+}
+</style>
+
+<script>
+// Category base rates
+const categoryBaseRates = {
+    'DEBT_CONSOLIDATION': 7.0,
+    'HOME_IMPROVEMENT': 6.0,
+    'EDUCATION': 5.5,
+    'BUSINESS': 8.0,
+    'MEDICAL': 6.5,
+    'VEHICLE_PURCHASE': 7.5
+};
+
+// Initialize with default values
+window.userCreditScore = 650;
+window.userHealthScore = 650;
+
+function fetchUserData() {
+    // For now, use default values since we don't have the API endpoint
+    document.getElementById('credit-score-display').textContent = '650';
+    document.getElementById('credit-score-display').className = 'credit-score fair';
+    document.getElementById('health-score-display').textContent = '650';
+    
+    console.log('User data initialized with defaults');
+}
+
+function getCreditScoreClass(score) {
+    if (score >= 750) return 'credit-score excellent';
+    if (score >= 650) return 'credit-score good';
+    if (score >= 550) return 'credit-score fair';
+    return 'credit-score poor';
+}
+
+function updatePurposeInfo() {
+    const purpose = document.getElementById('loanPurpose').value;
+    const infoElement = document.getElementById('purpose-info');
+    const amountInput = document.getElementById('loanAmount');
+    
+    // Reset all limit items
+    document.querySelectorAll('.limit-item').forEach(item => {
+        item.classList.remove('active');
+    });
+    
+    if (purpose) {
+        // Highlight selected category
+        const selectedLimit = document.querySelector(`.limit-item[data-purpose="${purpose}"]`);
+        if (selectedLimit) {
+            selectedLimit.classList.add('active');
+            selectedLimit.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+        
+        // Update purpose info
+        const creditScore = window.userCreditScore || 650;
+        const baseRate = categoryBaseRates[purpose] || 7.0;
+        const adjustedRate = calculateAdjustedRate(baseRate, creditScore);
+        
+        infoElement.textContent = `${categoryDescriptions[purpose]} | Estimated rate: ${adjustedRate}%`;
+        infoElement.className = 'form-text text-success';
+        
+        // Set max amount for input
+        const maxAmount = getMaxAmountForPurpose(purpose);
+        if (maxAmount) {
+            amountInput.max = maxAmount;
+            amountInput.placeholder = `Up to ₹${maxAmount.toLocaleString()}`;
+            updateAmountInfo(maxAmount);
+        }
+    } else {
+        infoElement.textContent = 'Select a loan purpose to see your personalized limit and rates';
+        infoElement.className = 'form-text text-muted';
+        amountInput.placeholder = 'Enter loan amount';
+        document.getElementById('amount-info').textContent = 'Enter desired loan amount';
+    }
+}
+
+function getMaxAmountForPurpose(purpose) {
+    const limitItem = document.querySelector(`.limit-item[data-purpose="${purpose}"]`);
+    if (limitItem) {
+        const amountText = limitItem.querySelector('.limit-amount').textContent;
+        return parseFloat(amountText.replace('₹', '').replace(/,/g, ''));
+    }
+    return null;
+}
+
+function calculateAdjustedRate(baseRate, creditScore) {
+    if (creditScore >= 750) return (baseRate - 1.0).toFixed(1);
+    if (creditScore >= 650) return (baseRate - 0.5).toFixed(1);
+    if (creditScore < 550) return (baseRate + 1.5).toFixed(1);
+    return baseRate.toFixed(1);
+}
+
+function updateAmountInfo(maxAmount) {
+    const amountInput = document.getElementById('loanAmount');
+    const amountInfo = document.getElementById('amount-info');
+    const currentAmount = parseFloat(amountInput.value) || 0;
+    
+    if (currentAmount > maxAmount) {
+        amountInfo.textContent = `Amount exceeds your limit of ₹${maxAmount.toLocaleString()}`;
+        amountInfo.className = 'form-text text-danger';
+    } else if (currentAmount > 0) {
+        const percentage = (currentAmount / maxAmount * 100).toFixed(1);
+        amountInfo.textContent = `${percentage}% of your limit (₹${maxAmount.toLocaleString()})`;
+        amountInfo.className = percentage > 80 ? 'form-text text-warning' : 'form-text text-success';
+    } else {
+        amountInfo.textContent = `Your limit: ₹${maxAmount.toLocaleString()}`;
+        amountInfo.className = 'form-text text-muted';
+    }
+}
+
+// Event listeners
+document.getElementById('loanAmount').addEventListener('input', function() {
+    const purpose = document.getElementById('loanPurpose').value;
+    if (purpose) {
+        const maxAmount = getMaxAmountForPurpose(purpose);
+        if (maxAmount) {
+            updateAmountInfo(maxAmount);
+        }
+    }
+});
+
+document.getElementById('loanPurpose').addEventListener('change', updatePurposeInfo);
+
+// Initialize on page load
+document.addEventListener('DOMContentLoaded', function() {
+    fetchUserData();
+    
+    // Auto-select first purpose to show limits
+    setTimeout(() => {
+        const firstPurpose = document.querySelector('#loanPurpose option[value]');
+        if (firstPurpose) {
+            document.getElementById('loanPurpose').value = firstPurpose.value;
+            updatePurposeInfo();
+        }
+    }, 100);
+});
+</script>
+{% endblock %}

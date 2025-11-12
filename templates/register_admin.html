@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="form-container">
+    <div class="card">
+        <div class="card-header">
+            <h2 class="card-title">Admin Registration</h2>
+            <span class="status status-approved">Restricted Access</span>
+        </div>
+        
+        <div class="alert alert-info">
+            <strong>Note:</strong> Admin registration requires approval from existing administrators. 
+            Your account will be activated after verification.
+        </div>
+        
+        <form method="POST">
+            <div class="form-group">
+                <label for="name">Full Name *</label>
+                <input type="text" id="name" name="name" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="email">Email Address *</label>
+                <input type="email" id="email" name="email" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password *</label>
+                <input type="password" id="password" name="password" required minlength="8">
+            </div>
+            
+            <div class="form-group">
+                <label for="employee_id">Employee ID</label>
+                <input type="text" id="employee_id" name="employee_id" placeholder="EMP001">
+            </div>
+            
+            <div class="form-group">
+                <label for="department">Department</label>
+                <select id="department" name="department">
+                    <option value="">Select Department</option>
+                    <option value="loan_approval">Loan Approval</option>
+                    <option value="customer_service">Customer Service</option>
+                    <option value="risk_management">Risk Management</option>
+                    <option value="administration">Administration</option>
+                    <option value="it">IT Support</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="permission_level">Permission Level</label>
+                <select id="permission_level" name="permission_level">
+                    <option value="viewer">Viewer (Read Only)</option>
+                    <option value="approver">Approver (Can approve loans)</option>
+                    <option value="super_admin">Super Admin (Full Access)</option>
+                </select>
+            </div>
+            
+            <div class="form-group">
+                <label for="phone">Phone Number</label>
+                <input type="tel" id="phone" name="phone" placeholder="+1-555-123-4567">
+            </div>
+            
+            <div class="form-group">
+                <label for="address">Address</label>
+                <textarea id="address" name="address" rows="3" placeholder="Enter your address"></textarea>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Register as Admin</button>
+        </form>
+        
+        <div style="text-align: center; margin-top: 1rem;">
+            <p>Already have an account? <a href="{{ url_for('login') }}">Login here</a></p>
+            <p>Want to register as Borrower? <a href="{{ url_for('register_borrower') }}">Borrower Registration</a></p>
+        </div>
+    </div>
+</div>
+{% endblock %}

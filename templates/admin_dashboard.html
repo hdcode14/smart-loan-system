@@ -1,0 +1,337 @@
+{% extends "base.html" %}
+
+{% block content %}
+<section class="dashboard">
+    <h1>ADMIN DASHBOARD 
+        {% if admin_profile %}
+        <small style="font-size: 1rem; color: var(--secondary);">
+            ({{ admin_profile.Department }} - {{ admin_profile.PermissionLevel|replace('_', ' ')|title }})
+        </small>
+        {% endif %}
+    </h1>
+    
+    <div class="dashboard-grid">
+        <div class="card stat-card">
+            <div class="stat-value">{{ users|selectattr("UserType", "equalto", "borrower")|list|length }}</div>
+            <div class="stat-label">Total Borrowers</div>
+        </div>
+        
+        <div class="card stat-card">
+            <div class="stat-value">{{ users|selectattr("UserType", "equalto", "admin")|list|length }}</div>
+            <div class="stat-label">Total Admins</div>
+        </div>
+        
+        <div class="card stat-card">
+            <div class="stat-value">{{ all_loans|length }}</div>
+            <div class="stat-label">Total Loans</div>
+        </div>
+        
+        <div class="card stat-card">
+            <div class="stat-value">{{ pending_loans|length }}</div>
+            <div class="stat-label">Pending Applications</div>
+        </div>
+        
+        <div class="card stat-card">
+            <div class="stat-value">
+                {{ all_loans|selectattr("Status", "equalto", "approved")|selectattr("DisbursementStatus", "equalto", "pending")|list|length }}
+            </div>
+            <div class="stat-label">Pending Disbursement</div>
+        </div>
+    </div>
+
+    <div class="tabs">
+        <div class="tab active" data-tab="pending">PENDING LOANS</div>
+        <div class="tab" data-tab="disbursement">Loan Disbursement</div>
+        <div class="tab" data-tab="users">User Management</div>
+        <div class="tab" data-tab="all-loans">All Loans</div>
+    </div>
+
+    <div class="tab-content active" id="pending-tab">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">PENDING LOAN APPLICATION</h3>
+                <span class="status status-pending">{{ pending_loans|length }} Pending</span>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Loan ID</th>
+                            <th>Borrower</th>
+                            <th>Email</th>
+                            <th>Amount</th>
+                            <th>Interest Rate</th>
+                            <th>Duration</th>
+                            <th>Purpose</th>
+                            <th>Credit Score</th>
+                            <th>Income</th>
+                            <th>Applied Date</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in pending_loans %}
+                        <tr>
+                            <td>#{{ loan.LoanID }}</td>
+                            <td>{{ loan.Name }}</td>
+                            <td>{{ loan.Email }}</td>
+                            <td>₹{{ "%.2f"|format(loan.Amount) }}</td>
+                            <td>{{ "%.2f"|format(loan.InterestRate) }}%</td>
+                            <td>{{ loan.Duration }} months</td>
+                            <td>{{ loan.Purpose }}</td>
+                            <td>
+                                {% if loan.CreditScore %}
+                                    {{ loan.CreditScore }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>
+                                {% if loan.Income %}
+                                    ₹{{ "%.2f"|format(loan.Income) }}
+                                {% else %}
+                                    N/A
+                                {% endif %}
+                            </td>
+                            <td>{{ loan.AppliedDate.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if admin_profile and admin_profile.PermissionLevel in ['approver', 'super_admin'] %}
+                                <button class="btn btn-success approve-loan" 
+                                        data-loan-id="{{ loan.LoanID }}"
+                                        data-borrower-name="{{ loan.Name }}"
+                                        style="margin-right: 0.5rem;">
+                                    Approve
+                                </button>
+                                <button class="btn btn-danger reject-loan"
+                                        data-loan-id="{{ loan.LoanID }}"
+                                        data-borrower-name="{{ loan.Name }}">
+                                    Reject
+                                </button>
+                                {% else %}
+                                <span class="status status-pending">View Only</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="11" style="text-align: center;">No pending loan applications</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<div class="tab-content" id="disbursement-tab">
+    <div class="card">
+        <div class="card-header">
+            <h3 class="card-title">LOAN DISBURSEMENT</h3>
+            <span class="stat-label">Ready for Disbursement: {{ all_loans|selectattr("Status", "equalto", "approved")|selectattr("AgreementSigned", "equalto", true)|selectattr("DisbursementStatus", "equalto", "pending")|list|length }}</span>
+        </div>
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Loan ID</th>
+                        <th>Borrower</th>
+                        <th>Amount</th>
+                        <th>Interest Rate</th>
+                        <th>Approved Date</th>
+                        <th>Agreement Status</th>
+                        <th>Disbursement Status</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for loan in all_loans if loan.Status == 'approved' %}
+                    <tr>
+                        <td>#{{ loan.LoanID }}</td>
+                        <td>{{ loan.Name }}</td>
+                        <td>₹{{ "%.2f"|format(loan.Amount) }}</td>
+                        <td>{{ "%.2f"|format(loan.InterestRate) }}%</td>
+                        <td>
+                            {% if loan.ApprovedDate %}
+                                {{ loan.ApprovedDate.strftime('%Y-%m-%d') }}
+                            {% else %}
+                                -
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if loan.AgreementPDF %}
+                                {% if loan.AgreementSigned %}
+                                    <span class="status status-completed">Signed</span>
+                                    <br><small>{{ loan.SignedDate.strftime('%Y-%m-%d') if loan.SignedDate else '' }}</small>
+                                {% else %}
+                                    <span class="status status-pending">Pending Signature</span>
+                                {% endif %}
+                            {% else %}
+                                <span class="status status-pending">Not Generated</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if loan.DisbursementStatus %}
+                                <span class="status status-{{ loan.DisbursementStatus }}">
+                                    {{ loan.DisbursementStatus|title }}
+                                </span>
+                            {% else %}
+                                <span class="status status-pending">Pending</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            {% if loan.AgreementPDF %}
+                                <a href="{{ url_for('view_agreement', loan_id=loan.LoanID) }}" 
+                                   class="btn btn-sm btn-outline" target="_blank">View Agreement</a>
+                            {% endif %}
+                            
+                            {% if loan.AgreementSigned and loan.DisbursementStatus == 'pending' %}
+                                <button class="btn btn-success btn-sm disburse-loan" 
+                                        data-loan-id="{{ loan.LoanID }}"
+                                        data-borrower-name="{{ loan.Name }}">
+                                    Disburse Now
+                                </button>
+                            {% elif loan.DisbursementStatus == 'pending' %}
+                                <span class="status status-pending">Awaiting Signature</span>
+                            {% elif loan.DisbursementStatus == 'processed' %}
+                                <span class="status status-completed">Disbursed</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="8" style="text-align: center;">No approved loans pending disbursement</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+    <div class="tab-content" id="users-tab">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">USER MANAGEMENT</h3>
+                <span class="stat-label">{{ users|length }} Total Users</span>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>User ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Type</th>
+                            <th>Role/Details</th>
+                            <th>Registered</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for user in users %}
+                        <tr>
+                            <td>#{{ user.UserID }}</td>
+                            <td>{{ user.Name }}</td>
+                            <td>{{ user.Email }}</td>
+                            <td>
+                                <span class="status status-{{ user.UserType }}">
+                                    {{ user.UserType|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if user.UserType == 'borrower' %}
+                                    Borrower
+                                {% elif user.UserType == 'admin' %}
+                                    Admin
+                                {% else %}
+                                    Basic User
+                                {% endif %}
+                            </td>
+                            <td>{{ user.CreatedAt.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if user.UserType == 'borrower' and admin_profile and admin_profile.PermissionLevel == 'super_admin' %}
+                                <a href="{{ url_for('make_admin', user_id=user.UserID) }}" 
+                                   class="btn btn-outline btn-sm"
+                                   onclick="return confirm('Make {{ user.Name }} an admin?')">
+                                    Make Admin
+                                </a>
+                                {% elif user.UserType == 'admin' %}
+                                <span class="status status-approved">Admin</span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="tab-content" id="all-loans-tab">
+        <div class="card">
+            <div class="card-header">
+                <h3 class="card-title">ALL LOANS</h3>
+                <span class="stat-label">{{ all_loans|length }} Total Loans</span>
+            </div>
+            <div class="table-container">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Loan ID</th>
+                            <th>Borrower</th>
+                            <th>Amount</th>
+                            <th>Interest Rate</th>
+                            <th>Duration</th>
+                            <th>Loan Type</th>
+                            <th>Purpose</th>
+                            <th>Status</th>
+                            <th>Disbursement</th>
+                            <th>Applied Date</th>
+                            <th>Approved Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for loan in all_loans %}
+                        <tr>
+                            <td>#{{ loan.LoanID }}</td>
+                            <td>{{ loan.Name }}</td>
+                            <td>₹{{ "%.2f"|format(loan.Amount) }}</td>
+                            <td>{{ "%.2f"|format(loan.InterestRate) }}%</td>
+                            <td>{{ loan.Duration }} months</td>
+                            <td>{{ loan.LoanType|title }}</td>
+                            <td>{{ loan.Purpose }}</td>
+                            <td>
+                                <span class="status status-{{ loan.Status }}">
+                                    {{ loan.Status|title }}
+                                </span>
+                            </td>
+                            <td>
+                                {% if loan.DisbursementStatus %}
+                                    <span class="status status-{{ loan.DisbursementStatus }}">
+                                        {{ loan.DisbursementStatus|title }}
+                                    </span>
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                            <td>{{ loan.AppliedDate.strftime('%Y-%m-%d') }}</td>
+                            <td>
+                                {% if loan.ApprovedDate %}
+                                    {{ loan.ApprovedDate.strftime('%Y-%m-%d') }}
+                                {% else %}
+                                    -
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="11" style="text-align: center;">No loans found</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}
