@@ -1,6 +1,7 @@
 import mysql.connector
 from mysql.connector import Error
 import logging
+import os
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger('database')
@@ -33,7 +34,7 @@ class Database:
             
         cursor = None
         try:
-            cursor = connection.cursor(buffered=True)  # Add buffered=True
+            cursor = connection.cursor(buffered=True)
             cursor.execute(query, params or ())
             connection.commit()
             return cursor.lastrowid
@@ -52,7 +53,7 @@ class Database:
             
         cursor = None
         try:
-            cursor = connection.cursor(buffered=True, dictionary=True)  # Add buffered=True
+            cursor = connection.cursor(buffered=True, dictionary=True)
             cursor.execute(query, params or ())
             result = cursor.fetchone()
             return result
@@ -70,7 +71,7 @@ class Database:
             
         cursor = None
         try:
-            cursor = connection.cursor(buffered=True, dictionary=True)  # Add buffered=True
+            cursor = connection.cursor(buffered=True, dictionary=True)
             cursor.execute(query, params or ())
             result = cursor.fetchall()
             return result
@@ -81,14 +82,15 @@ class Database:
             if cursor:
                 cursor.close()
 
-# Database configuration
+# Database configuration - USING RAILWAY ENVIRONMENT VARIABLES
 db_config = {
-    'host': 'localhost',
-    'user': 'root',
-    'password': 'isoHD1474@',  # Your password
-    'database': 'smart_loan_system',
-    'autocommit': True,  # Add this
-    'pool_size': 5,      # Add connection pooling
+    'host': os.getenv('MYSQLHOST', 'localhost'),
+    'port': int(os.getenv('MYSQLPORT', 3306)),
+    'user': os.getenv('MYSQLUSER', 'root'),
+    'password': os.getenv('MYSQLPASSWORD', 'isoHD1474@'),
+    'database': os.getenv('MYSQLDATABASE', 'smart_loan_system'),
+    'autocommit': True,
+    'pool_size': 5,
     'pool_reset_session': True
 }
 
