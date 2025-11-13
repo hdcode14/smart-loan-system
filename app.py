@@ -325,10 +325,6 @@ def register_borrower():
     
     return render_template('register_borrower.html')
 
-@app.route('/')
-def index():
-    return render_template('index.html')
-    
 @app.route('/register/admin', methods=['GET', 'POST'])
 def register_admin():
     if request.method == 'POST':
