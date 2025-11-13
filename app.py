@@ -325,6 +325,19 @@ def register_borrower():
     
     return render_template('register_borrower.html')
 
+
+@app.route('/health')
+def health_check():
+    return jsonify({
+        'status': 'healthy', 
+        'message': 'Server is running',
+        'timestamp': datetime.now().isoformat()
+    })
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+    
 @app.route('/register/admin', methods=['GET', 'POST'])
 def register_admin():
     if request.method == 'POST':
