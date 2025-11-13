@@ -245,7 +245,7 @@ def create_tables_if_not_exist():
         return False
 
 # Database configuration - USING RAILWAY ENVIRONMENT VARIABLES
-    db_config = {
+db_config = {
         'host': os.getenv('MYSQLHOST', 'localhost'),
         'port': int(os.getenv('MYSQLPORT', 3306)),
         'user': os.getenv('MYSQLUSER', 'root'),
@@ -254,7 +254,7 @@ def create_tables_if_not_exist():
         'autocommit': True,
         'pool_size': 5,
         'pool_reset_session': True
-    }
+}
 
 # Create global instance
 db = Database(db_config)
